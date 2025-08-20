@@ -9,7 +9,7 @@ const app = express()
 
 const PORT = process.env.PORT || 9000;
 
-app.use('/api' , api)
+app.use('/api/v1' , api)
 
 app.use(morgan('combined'))
 
