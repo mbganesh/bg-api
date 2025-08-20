@@ -7,11 +7,12 @@ const app = express()
 
 mongoose.connect('mongodb://localhost/practice')
 
+
 app.use('/api' , api)
 
 app.use(morgan('combined'))
 
 
-app.listen(9090)
+app.listen(9000)
 
 app.use(morgan('dev'))

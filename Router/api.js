@@ -6,8 +6,9 @@ router.use(express.json())
 
 
 router.get('/' , async (req , res)=> {
-    let allData = await PeopleSchema.find({})
-    res.send(allData)
+    // let allData = await PeopleSchema.find({})
+    // res.send(allData)
+    res.send('🤡 is working....')
 })
 
 

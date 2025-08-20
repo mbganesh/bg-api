@@ -1,7 +1,7 @@
 {
   "name": "es6",
   "version": "1.0.0",
-  "description": "Express JS Template",
+  "description": "BG-API",
   "main": "index.js",
   "type": "module",
   "scripts": {
