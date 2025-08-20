@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
-      "start": "node index.js"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "Ganesh",
@@ -14,10 +14,8 @@
   "dependencies": {
     "express": "^4.17.3",
     "mongoose": "^6.2.4",
-    "morgan": "^1.10.0",
-    "nodemon": "^2.0.15"
+    "morgan": "^1.10.0"
   },
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mbganesh/Express-ES6-Template.git"
@@ -25,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/mbganesh/Express-ES6-Template/issues"
   },
-  "homepage": "https://github.com/mbganesh/Express-ES6-Template#readme"
+  "homepage": "https://github.com/mbganesh/Express-ES6-Template#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
 }
