@@ -127,6 +127,11 @@ export const uploadRandomStuff = async () => {
     const UPLOAD_PATH = `uploads/media_${now}.mp4`;
     const FILE_PATH = "./media/testv.mp4";
     // read file as base64
+
+    if (!fs.existsSync(FILE_PATH)) {
+      return null;
+    }
+
     const fileContent = fs.readFileSync(FILE_PATH, { encoding: "base64" });
 
     const res = await axios.put(
