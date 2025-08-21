@@ -16,7 +16,12 @@ router.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use("/media", express.static(path.join(__dirname, "media")));
+router.use("/media", express.static(path.join(__dirname, "media")));
+console.log(
+  `🚀 ~ api.js:20 ~ path.join(__dirname, "media"):`,
+  { __filename },
+  path.join(__dirname, "media")
+);
 
 router.get("/", async (req, res) => {
   res.send("🤡 is working....");
