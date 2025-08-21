@@ -4,10 +4,11 @@ import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import moment from "moment";
+import { exec } from "child_process";
+import { promisify } from "util";
 import path from "path";
 
-const fontPath = path.resolve("./assets/fonts/Roboto.ttf");
-const outputVideo = path.resolve("./output.mp4");
+const execAsync = promisify(exec);
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -16,19 +17,44 @@ dotenv.config();
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const OWNER = "mbganesh";
 const REPO = "media-storage";
-const FILE_PATH = "./media/test.png";
-const UPLOAD_PATH = "uploads/test.png"; // FIXME: need to generate randomly...
+const FILE_PATH_VIDEO = "./media/temp.mp4";
+const UPLOAD_PATH_VIDEO = "uploads/";
 
-export const uploadFile = async () => {
+export const uploadFileOld = async () => {
   try {
-    // read file as base64
-    const fileContent = fs.readFileSync(FILE_PATH, { encoding: "base64" });
+    // Read file
+    const fileBuffer = fs.readFileSync(FILE_PATH_VIDEO);
+    const fileContent = fileBuffer.toString("base64");
 
+    const today = moment().format("YYYY-MM-DD");
+    const fileName = `temp_date_${today}.mp4`;
+
+    const UPLOAD_PATH = UPLOAD_PATH_VIDEO + fileName;
+
+    // Check if file exists
+    let sha;
+    try {
+      const { data } = await axios.get(
+        `https://api.github.com/repos/${OWNER}/${REPO}/contents/${UPLOAD_PATH}`,
+        {
+          headers: {
+            Authorization: `token ${GITHUB_TOKEN}`,
+            Accept: "application/vnd.github+json",
+          },
+        }
+      );
+      sha = data.sha; // Only needed if updating
+    } catch (e) {
+      if (e.response?.status !== 404) throw e;
+    }
+
+    // Upload or update file
     const res = await axios.put(
       `https://api.github.com/repos/${OWNER}/${REPO}/contents/${UPLOAD_PATH}`,
       {
-        message: `Upload ${FILE_PATH}`,
+        message: `Upload ${FILE_PATH_VIDEO}`,
         content: fileContent,
+        ...(sha ? { sha } : {}), // include sha only if updating
       },
       {
         headers: {
@@ -37,108 +63,94 @@ export const uploadFile = async () => {
         },
       }
     );
+    console.log("🚀 ~ media-control.js:65 ~ uploadFile ~ res:", res);
 
-    // Raw file URL
-    const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${UPLOAD_PATH}`;
-    console.log("✅ Uploaded! File URL:", url);
-    return url;
+    return `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${UPLOAD_PATH}`;
   } catch (err) {
     console.error("❌ Upload failed:", err.response?.data || err.message);
     return err?.response?.data || err?.message;
   }
 };
 
-const fontPathV = path.join(process.cwd(), "assets/fonts/Roboto.ttf");
+export const addOverlay = async (slogan) => {
+  const now = moment().format("YYYY-MM-DD_HHmmss");
+  const fileName = `temp_date_${now}.mp4`;
+  const outputDir = path.resolve("uploads");
+  const outputPath = path.join(outputDir, fileName);
 
-export const addOverlay = async (url) => {
-  const today = moment().format("YYYY-MM-DD");
-  const slogan = "some random text";
+  const dateLabel = moment().format("DD MMMM YYYY");
 
-  return new Promise((resolve, reject) => {
-    ffmpeg(url)
-      .videoFilter([
-        `drawtext=text='${today}':fontcolor=white:fontsize=36:x=(w-tw)/2:y=50`,
-        `drawtext=text='${slogan}':fontcolor=yellow:fontsize=28:x=(w-tw)/2:y=h-80`,
-      ])
-      .output(`medi_${today}`)
-      .on("end", () => resolve(outputVideo))
-      .on("error", reject)
-      .run();
-  });
+  // Ensure folder exists
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
 
-  return new Promise((resolve, reject) => {
-    ffmpeg(url)
-      .videoFilters({
-        filter: "drawtext",
-        options: {
-          fontfile: fontPath,
-          text: "THIS IS TEXT",
-          fontsize: 20,
-          fontcolor: "white",
-          x: "(main_w/2-text_w/2)",
-          y: 50,
-          shadowcolor: "black",
-          shadowx: 2,
-          shadowy: 2,
-        },
-      })
-      .on("end", function () {
-        console.log("file has been converted succesfully");
-      })
-      .on("error", function (err) {
-        console.log("an error happened: " + err.message);
-      })
-      // save to file
-      .save("./out.mp4");
-  });
+  const inputPath = path.resolve("media/temp.mp4");
 
-  return;
+  // From local file
+  const ffmpegCommand = `ffmpeg -i "${inputPath}" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2, drawtext=text='${dateLabel}':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=80, drawtext=text='${slogan}':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=h-th-80" -c:v libx264 -pix_fmt yuv420p -c:a aac -strict experimental "${outputPath}"`;
 
-  return new Promise((resolve, reject) => {
-    ffmpeg(url)
-      .videoFilters({
-        filter: "drawtext",
-        options: {
-          text: "Hello Deploy!",
-          fontfile: fontPathV,
-          fontsize: 36,
-          fontcolor: "white",
-          x: "(w-text_w)/2",
-          y: "(h-text_h)-50",
-        },
-      })
-      .output(outputVideo)
-      .on("end", () => {
-        console.log("✅ Video created with date & slogan");
-        resolve(outputVideo); // resolve with output path
-      })
-      .on("error", (err) => {
-        console.error("❌ Error:", err.message || err);
-        reject(err);
-      })
-      .run();
-  });
+  // From URL
+  // const ffmpegCommand = `ffmpeg -i "${url}" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2, drawtext=text='${dateLabel}':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=80, drawtext=text='${slogan}':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=h-th-80" -c:v libx264 -pix_fmt yuv420p -c:a aac -strict experimental "${outputPath}"`;
+
+  console.log("---FFmpeg Init.... ");
+
+  // Start Loading Indicator
+  let dots = "";
+  const loadingInterval = setInterval(() => {
+    dots = dots.length < 5 ? dots + "." : "";
+    process.stdout.write(`\r ☢️☢️☢️ Processing${dots} `);
+  }, 2000); // every 2 seconds
+
+  try {
+    const { stdout, stderr } = await execAsync(ffmpegCommand);
+    clearInterval(loadingInterval);
+    console.log("---FFmpeg stderr:", stderr);
+    console.log("---FFmpeg stdout:", stdout);
+    console.log("---Video processing completed:", outputPath);
+    return { status: true, path: outputPath };
+  } catch (error) {
+    clearInterval(loadingInterval);
+    console.error("Error:🤡🤡🤡", error.message);
+    return { status: false, path: null };
+  }
 };
 
-export const uploadRandomStuff = async () => {
+export const uploadFile = async (localFilePath) => {
   try {
-    const now = moment().format("YYYY-MM-DD_HHmmss");
+    // Read file (ensure correct local path is passed)
+    const fileBuffer = fs.readFileSync(localFilePath);
+    const fileContent = fileBuffer.toString("base64");
 
-    const UPLOAD_PATH = `uploads/media_${now}.mp4`;
-    const FILE_PATH = "./media/testv.mp4";
-    // read file as base64
+    // Create unique file name for GitHub repo
+    const today = moment().format("YYYY-MM-DD_HHmmss");
+    const fileName = `temp_date_${today}.mp4`;
+    const UPLOAD_PATH = `${UPLOAD_PATH_VIDEO}${fileName}`;
 
-    if (!fs.existsSync(FILE_PATH)) {
-      return null;
+    // Check if file already exists in repo
+    let sha;
+    try {
+      const { data } = await axios.get(
+        `https://api.github.com/repos/${OWNER}/${REPO}/contents/${UPLOAD_PATH}`,
+        {
+          headers: {
+            Authorization: `token ${GITHUB_TOKEN}`,
+            Accept: "application/vnd.github+json",
+          },
+        }
+      );
+      sha = data.sha; // Required for updating existing file
+    } catch (e) {
+      if (e.response?.status !== 404) throw e; // Ignore if file not found
     }
 
-    const fileContent = fs.readFileSync(FILE_PATH, { encoding: "base64" });
-
+    // Upload or update file
     const res = await axios.put(
       `https://api.github.com/repos/${OWNER}/${REPO}/contents/${UPLOAD_PATH}`,
       {
-        message: `Upload ${FILE_PATH}`,
+        message: `Upload ${fileName}`,
         content: fileContent,
+        ...(sha ? { sha } : {}),
       },
       {
         headers: {
@@ -148,12 +160,12 @@ export const uploadRandomStuff = async () => {
       }
     );
 
-    // Raw file URL
-    const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${UPLOAD_PATH}`;
-    console.log("✅ Uploaded! File URL:", url);
-    // return url;
+    console.log("Uploaded:", res.data.content.path);
+
+    // Return raw GitHub URL
+    return `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${UPLOAD_PATH}`;
   } catch (err) {
     console.error("❌ Upload failed:", err.response?.data || err.message);
-    // return err?.response?.data || err?.message;
+    return err?.response?.data || err?.message;
   }
 };

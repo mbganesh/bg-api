@@ -2,11 +2,7 @@ import express from "express";
 import cron from "node-cron";
 import path from "path";
 import { fileURLToPath } from "url";
-import {
-  addOverlay,
-  uploadFile,
-  uploadRandomStuff,
-} from "../utils/media-control.js";
+import { addOverlay, uploadFile } from "../utils/media-control.js";
 import fs from "fs";
 
 const router = express.Router();
@@ -17,18 +13,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 router.use("/media", express.static(path.join(__dirname, "media")));
-console.log(
-  `🚀 ~ api.js:20 ~ path.join(__dirname, "media"):`,
-  { __filename },
-  path.join(__dirname, "media")
-);
 
 router.get("/", async (req, res) => {
   res.send("🤡 is working....");
 });
 
 router.get("/video", (req, res) => {
-  const videoPath = path.join(__dirname, "../media/testv.mp4");
+  const videoPath = path.join(__dirname, "../media/temp.mp4");
   const stat = fs.statSync(videoPath);
   const fileSize = stat.size;
   const range = req.headers.range;
@@ -59,17 +50,10 @@ router.get("/video", (req, res) => {
 
 router.get("/uploadd", async (req, res) => {
   try {
-    // const url = await uploadFile();
+    // step:2
+    const url = await uploadFile();
 
-    // const dd = addOverlay('https://raw.githubusercontent.com/mbganesh/media-storage/main/uploads/test.png')
-    // res.status(200).json({ success: true, url });
-
-    // res.json({ok:dd})
-
-    const dds = await addOverlay("./media/testv.mp4");
-    console.log("🎉 Video processed successfully");
-
-    res.send("ok...");
+    res.json({ url });
   } catch (error) {
     console.error("❌ Error in /uploadd:", error);
     res.status(500).json({
@@ -79,9 +63,65 @@ router.get("/uploadd", async (req, res) => {
   }
 });
 
-// Schedule job: every day at 10 AM
-cron.schedule("*/5 * * * *", () => {
-  uploadRandomStuff();
+router.get("/ffmpeg", async (req, res) => {
+  try {
+    const slogan = "Why try when failure comes so naturally?";
+
+    // step:1
+    const updateOverlay = await addOverlay(slogan);
+
+    if (updateOverlay?.status) {
+      const url = await uploadFile(updateOverlay?.path);
+
+      if (url) {
+        res.json({
+          path: url,
+          message: "successfully deployed",
+        });
+      } else {
+        res.json({
+          path: updateOverlay?.path,
+          message: "successfully updated",
+        });
+      }
+    } else {
+      res.send("unable to processing");
+    }
+  } catch (error) {
+    console.error("❌ Error in /uploadd:", error);
+    res.status(500).json({
+      success: false,
+      error: error?.message || "api failed 🤡",
+    });
+  }
 });
 
+const cronSlot = "*/10 * * * *";
+cron.schedule(cronSlot, async () => {
+  try {
+    const slogan = "🤡🤡🤡 sHittt 🤡🤡🤡?";
+
+    const updateOverlay = await addOverlay(slogan);
+
+    if (updateOverlay?.status) {
+      const url = await uploadFile(updateOverlay?.path);
+
+      if (url) {
+        console.log({
+          path: url,
+          message: "Successfully deployed",
+        });
+      } else {
+        console.log({
+          path: updateOverlay?.path,
+          message: "Successfully updated",
+        });
+      }
+    } else {
+      console.log("Unable to process overlay");
+    }
+  } catch (error) {
+    console.error("❌ Cron job failed:", error?.message || error);
+  }
+});
 export default router;
