@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 
 import { addOverlay, uploadFile } from "../utils/media-control.js";
-import { runCleanup } from "../utils/cleanup.mjs";
+import { cleanupOldFiles } from "../utils/cleanupOldFiles.js";
 
 const router = express.Router();
 
@@ -103,12 +103,12 @@ const initDailyRemenderCron = async () => {
     const slogan = "🤡🤡🤡 sHittt 🤡🤡🤡?";
 
     const updateOverlay = await addOverlay(slogan);
-    console.log("🚀 ~ api.js:105 ~ updateOverlay:", updateOverlay);
 
     if (updateOverlay?.status) {
-      const url = await uploadFile(updateOverlay?.path);
+      const { error, status, url } = await uploadFile(updateOverlay?.path);
 
-      if (url) {
+      if (status) {
+        await cleanupOldFiles();
         console.log({
           path: url,
           message: "Successfully deployed",
@@ -116,7 +116,7 @@ const initDailyRemenderCron = async () => {
       } else {
         console.log({
           path: updateOverlay?.path,
-          message: "Successfully updated",
+          message: error,
         });
       }
     } else {
@@ -127,9 +127,13 @@ const initDailyRemenderCron = async () => {
   }
 };
 
-const cronSlot = "*/15 * * * *"; // every 15 mins
+// const cronSlot = "*/15 * * * *"; // every 15 mins
+
+// const cronSlot = "*/5 * * * *"; // Runs every 5 minutes
+
+const cronSlot = "0 */2 * * *"; // every 2 hr
+
 cron.schedule(cronSlot, async () => {
   initDailyRemenderCron();
-  await runCleanup();
 });
 export default router;
