@@ -12,6 +12,7 @@
   "author": "Ganesh",
   "license": "MIT",
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "axios": "^1.11.0",
     "dotenv": "^17.2.1",
     "express": "^4.17.3",

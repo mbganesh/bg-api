@@ -96,12 +96,12 @@ router.get("/ffmpeg", async (req, res) => {
   }
 });
 
-const cronSlot = "*/10 * * * *";
-cron.schedule(cronSlot, async () => {
+const initDailyRemenderCron = async () => {
   try {
     const slogan = "🤡🤡🤡 sHittt 🤡🤡🤡?";
 
     const updateOverlay = await addOverlay(slogan);
+    console.log("🚀 ~ api.js:105 ~ updateOverlay:", updateOverlay);
 
     if (updateOverlay?.status) {
       const url = await uploadFile(updateOverlay?.path);
@@ -123,5 +123,10 @@ cron.schedule(cronSlot, async () => {
   } catch (error) {
     console.error("❌ Cron job failed:", error?.message || error);
   }
+};
+
+const cronSlot = "*/10 * * * *";
+cron.schedule(cronSlot, async () => {
+  initDailyRemenderCron();
 });
 export default router;
