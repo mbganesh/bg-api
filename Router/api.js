@@ -127,15 +127,15 @@ const initDailyRemenderCron = async () => {
   }
 };
 
-initDailyRemenderCron();
+// initDailyRemenderCron();
 
-// const cronSlot = "*/15 * * * *"; // every 15 mins
+const cronSlot = "*/15 * * * *"; // every 15 mins
 
 // const cronSlot = "*/5 * * * *"; // Runs every 5 minutes
 
-const cronSlot = "0 */2 * * *"; // every 2 hr
+// const cronSlot = "0 */2 * * *"; // every 2 hr
 
 cron.schedule(cronSlot, async () => {
-  // initDailyRemenderCron();
+  initDailyRemenderCron();
 });
 export default router;
