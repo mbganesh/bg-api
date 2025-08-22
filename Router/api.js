@@ -2,8 +2,10 @@ import express from "express";
 import cron from "node-cron";
 import path from "path";
 import { fileURLToPath } from "url";
-import { addOverlay, uploadFile } from "../utils/media-control.js";
 import fs from "fs";
+
+import { addOverlay, uploadFile } from "../utils/media-control.js";
+import { runCleanup } from "../utils/cleanup.mjs";
 
 const router = express.Router();
 
@@ -125,8 +127,9 @@ const initDailyRemenderCron = async () => {
   }
 };
 
-const cronSlot = "*/10 * * * *";
+const cronSlot = "*/15 * * * *"; // every 15 mins
 cron.schedule(cronSlot, async () => {
   initDailyRemenderCron();
+  await runCleanup();
 });
 export default router;
